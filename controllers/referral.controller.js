@@ -1,5 +1,6 @@
 const Referral = require("../models/referral.model.js");
 const transporter = require("../config/mail.js");
+const { validateReferral } = require("../validation/referral.validation.js");
 
 // Utility function to send referral email
 const sendReferralEmail = async (email, referralData) => {
@@ -26,14 +27,26 @@ const sendReferralEmail = async (email, referralData) => {
 const createReferral = async (req, res, next) => {
   const { name, email, referralCode, message } = req.body;
 
-  if (!name || !email || !referralCode || !message) {
-    return res.status(400).json({ error: "All fields are required" });
+  // Validate the request body
+  const { isValid, errors } = validateReferral(req.body);
+
+  if (!isValid) {
+    return res.status(400).json({ errors });
   }
 
   try {
+    // Check if referral code has already been sent to this email
+    const existingReferral = await Referral.findOne({ email, referralCode });
+    if (existingReferral) {
+      return res.status(400).json({
+        error: "This referral code has already been sent to this email",
+      });
+    }
+
     const newReferral = new Referral({ name, email, referralCode, message });
     await newReferral.save();
 
+    // Send confirmation email
     await sendReferralEmail(email, { name, referralCode, message });
 
     res.status(201).json({ message: "Referral submitted successfully" });

@@ -1,5 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const cors = require("cors");
 const connectDB = require("./config/db");
 const referralRoutes = require("./routes/referral.routes.js");
 const errorHandler = require("./middlewares/error.middleware.js");
@@ -12,6 +13,12 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Middleware
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true,
+  })
+);
 app.use(bodyParser.json());
 app.use("/api", referralRoutes);
 app.use(errorHandler);
